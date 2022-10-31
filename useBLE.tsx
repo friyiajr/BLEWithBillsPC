@@ -28,11 +28,7 @@ interface BluetoothLowEnergyApi {
   allDevices: Device[];
   yourParty: Pokemon[];
   billsPC: Pokemon[];
-  exchangePokemon(
-    device: Device,
-    index: BigInt,
-    operation: number,
-  ): Promise<void>;
+
   exchangeError: BleError | null;
 }
 
@@ -164,7 +160,7 @@ function useBLE(): BluetoothLowEnergyApi {
       device.monitorCharacteristicForService(
         POKEMON_SERVICE_UUID,
         POKEMON_SERVICE_CHARACTERISTIC,
-        onPokemonPartyUpdated,
+        () => {},
       );
     } else {
       console.log('No Device Connected');
@@ -173,120 +169,7 @@ function useBLE(): BluetoothLowEnergyApi {
 
   // Tutorial Methods Start ====
 
-  const encodeExchangeRequest = (exchangePokemon: Pokemon[]) => {
-    let rawData = BigInt(0);
-    let byteArrayOffset = 0;
-
-    for (let pokemon of exchangePokemon) {
-      byteArrayOffset += 8;
-      const opCode = pokemon.opCode.valueOf() << BigInt(byteArrayOffset);
-
-      const pokedexCode =
-        pokemon.pokemonIndex.valueOf() << BigInt(byteArrayOffset - 8);
-
-      const fullCode = opCode | pokedexCode;
-      rawData = rawData | fullCode;
-      byteArrayOffset += 2;
-    }
-
-    return rawData;
-  };
-
-  const exchangePokemon = async (
-    device: Device,
-    index: BigInt,
-    operation: number,
-  ) => {
-    const allPokemon = [...yourParty, ...billsPC];
-
-    allPokemon.sort((a, b) =>
-      Number(a.pokemonIndex.valueOf() - b.pokemonIndex.valueOf()),
-    );
-
-    const targetIndex = allPokemon.findIndex(poke => {
-      return poke.pokemonIndex === index;
-    });
-
-    allPokemon[targetIndex].opCode = BigInt(operation);
-
-    const request = encodeExchangeRequest(allPokemon);
-    setExchangeError(null);
-
-    try {
-      await bleManager.writeCharacteristicWithResponseForDevice(
-        device.id,
-        POKEMON_SERVICE_UUID,
-        POKEMON_SERVICE_CHARACTERISTIC,
-        btoa(`${request}`),
-      );
-    } catch (e) {
-      console.log(e);
-    }
-  };
-
-  const extractBit = (target: BigInt, startBit: BigInt, endBit: BigInt) => {
-    const mask =
-      ((BigInt(1) << endBit.valueOf()) - BigInt(1)) << startBit.valueOf();
-
-    return mask & target.valueOf();
-  };
-
-  const deserializeData = (data: string) => {
-    const kPokeIndexLength = 8;
-    const kOpcodeLength = 2;
-    const allPokemon: Pokemon[] = [];
-
-    let allData = BigInt(data);
-    let i = 0;
-
-    while (i < 60) {
-      const pokemonIndex =
-        extractBit(allData, BigInt(i), BigInt(kPokeIndexLength)) >> BigInt(i);
-
-      const opCode =
-        extractBit(
-          allData,
-          BigInt(i + kPokeIndexLength),
-          BigInt(kOpcodeLength),
-        ) >> BigInt(i + kPokeIndexLength);
-
-      allPokemon.push({
-        opCode,
-        pokemonIndex,
-      });
-
-      i += 10;
-    }
-
-    return allPokemon;
-  };
-
-  const onPokemonPartyUpdated = (
-    error: BleError | null,
-    characteristic: Characteristic | null,
-  ) => {
-    const rawData = atob(characteristic?.value ?? '');
-    const newPokemon = deserializeData(rawData);
-
-    if (error) {
-      setExchangeError(error);
-      return;
-    }
-
-    const filterPokemon = newPokemon.filter(
-      pokemon => pokemon.opCode !== BigInt(POKEMON_STATE.PC),
-    );
-
-    const filterPC = newPokemon.filter(
-      pokemon => pokemon.opCode === BigInt(POKEMON_STATE.PC),
-    );
-
-    setYourParty(filterPokemon);
-    setBillsPc(filterPC);
-  };
-
   return {
-    exchangePokemon,
     scanForPeripherals,
     requestPermissions,
     connectToDevice,

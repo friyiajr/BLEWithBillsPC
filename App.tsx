@@ -92,11 +92,11 @@ const App = () => {
                   exiting={LightSpeedOutRight.duration(1000)}>
                   <Pressable
                     onPress={() => {
-                      exchangePokemon(
-                        connectedDevice,
-                        item.pokemonIndex,
-                        POKEMON_STATE.PC,
-                      );
+                      // exchangePokemon(
+                      //   connectedDevice,
+                      //   item.pokemonIndex,
+                      //   POKEMON_STATE.PC,
+                      // );
                     }}
                     style={styles.pokemonButtonRow}>
                     <Image
@@ -129,11 +129,11 @@ const App = () => {
                   exiting={LightSpeedOutRight.duration(1000)}>
                   <Pressable
                     onPress={() => {
-                      exchangePokemon(
-                        connectedDevice,
-                        item.pokemonIndex,
-                        POKEMON_STATE.TRAINER,
-                      );
+                      // exchangePokemon(
+                      //   connectedDevice,
+                      //   item.pokemonIndex,
+                      //   POKEMON_STATE.TRAINER,
+                      // );
                     }}
                     style={styles.pokemonButtonRow}>
                     <Image
